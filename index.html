@@ -133,14 +133,6 @@
         .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
         #modalSaveBtn { background-color: #4CAF50; color: white; }
         #modalCancelBtn { background-color: #f44336; color: white; }
-
-        /* Schedule Styles */
-        .schedule-item { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-right: 4px solid #667eea; position: relative; }
-        .schedule-item.edit-mode { background: #f0f4ff; border: 2px solid #2196F3; }
-        .schedule-item .time { font-size: 18px; font-weight: 600; color: #667eea; margin-bottom: 5px; }
-        .schedule-item .activity-desc { color: #333; }
-        .schedule-item .delete-schedule-btn { position: absolute; top: 10px; left: 10px; background: #ff4444; color: white; border: none; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-        .schedule-item input[type="time"], .schedule-item input[type="text"] { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -187,16 +179,7 @@
             <div id="historyList"></div>
         </div>
         <div id="schedule" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div style="font-size: 18px; font-weight: 600; color: #333;">לוח זמנים יומי</div>
-                <button id="editScheduleBtn" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer;">✏️ ערוך לו"ז</button>
-            </div>
-            <div id="scheduleItems"></div>
-            <div id="scheduleEditSection" style="display: none;">
-                <button id="addScheduleItemBtn" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px;">➕ הוסף פעילות חדשה</button>
-                <button id="saveScheduleBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px;">💾 שמור לו"ז</button>
-                <button id="resetScheduleBtn" style="background: #ff4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px;">🔄 אפס לברירת מחדל</button>
-            </div>
+             <p style="text-align:center; color:#999;">לוח הזמנים יתווסף בקרוב.</p>
         </div>
         <div id="stats" class="tab-content">
              <p style="text-align:center; color:#999;">סטטיסטיקות יתווספו בקרוב.</p>
@@ -224,19 +207,6 @@
         let activities = [];
         let database = null;
         let filterDate = null;
-        let schedule = [];
-        let isEditingSchedule = false;
-
-        const defaultSchedule = [
-            { time: "06:00", activity: "🌅 השכמה + פיפי ראשון" }, { time: "06:30", activity: "🍖 ארוחת בוקר" },
-            { time: "08:00", activity: "🚶 טיול קצר + צרכים" }, { time: "09:00", activity: "🎾 זמן משחק ופעילות" },
-            { time: "10:00", activity: "😴 תנומה" }, { time: "12:00", activity: "🍖 ארוחת צהריים" },
-            { time: "13:00", activity: "🚶 טיול + צרכים" }, { time: "14:00", activity: "🎯 זמן אימון (5-10 דקות)" },
-            { time: "15:00", activity: "😴 מנוחת אחה\"צ" }, { time: "17:00", activity: "🎾 משחק ופעילות" },
-            { time: "18:00", activity: "🍖 ארוחת ערב" }, { time: "19:00", activity: "🚶 טיול ערב + צרכים" },
-            { time: "20:00", activity: "🎯 אימון קצר" }, { time: "21:00", activity: "😴 הכנה לשינת לילה" },
-            { time: "23:00", activity: "💧 פיפי אחרון לפני השינה" }
-        ];
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -274,17 +244,11 @@
             // Modal listeners
             document.getElementById('modalCancelBtn').addEventListener('click', closeEditModal);
             document.getElementById('modalSaveBtn').addEventListener('click', saveActivityChanges);
-            // Schedule listeners
-            document.getElementById('editScheduleBtn').addEventListener('click', toggleScheduleEdit);
-            document.getElementById('addScheduleItemBtn').addEventListener('click', addScheduleItem);
-            document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
-            document.getElementById('resetScheduleBtn').addEventListener('click', resetSchedule);
         }
 
         function loadInitialData() {
             if (database) {
                 listenToActivities();
-                loadSchedule();
             }
             calculatePuppyAge();
             setInterval(calculatePuppyAge, 60000);
@@ -317,7 +281,6 @@
             document.getElementById(tabName).classList.add('active');
             document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
             if (tabName === 'history') displayHistory();
-            if (tabName === 'schedule') loadSchedule();
         }
 
         function switchUser(user) {
@@ -416,90 +379,6 @@
             }
         }
         
-        // --- Schedule Functions ---
-        function loadSchedule() {
-            if (database) {
-                database.ref('schedule').once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    schedule = data ? data : [...defaultSchedule];
-                    displaySchedule();
-                });
-            } else {
-                schedule = [...defaultSchedule];
-                displaySchedule();
-            }
-        }
-
-        function displaySchedule() {
-            const container = document.getElementById('scheduleItems');
-            schedule.sort((a, b) => a.time.localeCompare(b.time));
-
-            container.innerHTML = schedule.map((item, index) => {
-                if (isEditingSchedule) {
-                    return `
-                    <div class="schedule-item edit-mode">
-                        <input type="time" value="${item.time}" onchange="updateScheduleTime(${index}, this.value)">
-                        <input type="text" value="${item.activity}" onchange="updateScheduleActivity(${index}, this.value)" placeholder="תיאור הפעילות...">
-                        <button class="delete-schedule-btn" onclick="removeScheduleItem(${index})">🗑️</button>
-                    </div>`;
-                }
-                return `
-                    <div class="schedule-item">
-                        <div class="time">${item.time}</div>
-                        <div class="activity-desc">${item.activity}</div>
-                    </div>`;
-            }).join('');
-        }
-        
-        function toggleScheduleEdit() {
-            isEditingSchedule = !isEditingSchedule;
-            const btn = document.getElementById('editScheduleBtn');
-            const editSection = document.getElementById('scheduleEditSection');
-            
-            if (isEditingSchedule) {
-                btn.textContent = '❌ ביטול עריכה';
-                btn.style.background = '#ff4444';
-                editSection.style.display = 'block';
-            } else {
-                btn.textContent = '✏️ ערוך לו"ז';
-                btn.style.background = '#2196F3';
-                editSection.style.display = 'none';
-            }
-            displaySchedule();
-        }
-
-        function updateScheduleTime(index, time) { schedule[index].time = time; }
-        function updateScheduleActivity(index, activity) { schedule[index].activity = activity; }
-        
-        function removeScheduleItem(index) {
-            if (confirm('למחוק את הפעילות הזו מהלו"ז?')) {
-                schedule.splice(index, 1);
-                displaySchedule();
-            }
-        }
-
-        function addScheduleItem() {
-            schedule.push({ time: "12:00", activity: "🆕 פעילות חדשה" });
-            displaySchedule();
-        }
-
-        async function saveSchedule() {
-            try {
-                if (database) await database.ref('schedule').set(schedule);
-                showNotification('הלו"ז נשמר בהצלחה!');
-                toggleScheduleEdit();
-            } catch (error) { alert('שגיאה בשמירה: ' + error.message); }
-        }
-
-        function resetSchedule() {
-            if (confirm('לאפס את הלו"ז לברירת המחדל?')) {
-                schedule = [...defaultSchedule];
-                displaySchedule();
-                saveSchedule();
-                showNotification('הלו"ז אופס לברירת המחדל');
-            }
-        }
-
         // --- History Filters ---
         function filterByDate() {
             filterDate = document.getElementById('dateFilter').value ? new Date(document.getElementById('dateFilter').value).toLocaleDateString('he-IL') : null;
@@ -519,19 +398,11 @@
         // --- Utility Functions ---
         function calculatePuppyAge() {
             const birthDate = new Date(2025, 5, 22); // Month is 0-indexed (5 = June)
-            const today = new Date();
-            // If birth date is in the future, calculate based on today's date for age calculation to avoid negative numbers in display logic.
-            const calculationDate = today < birthDate ? birthDate : today;
-            const diffDays = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24));
-            
+            const diffDays = Math.floor((new Date() - birthDate) / (1000 * 60 * 60 * 24));
             let ageText;
             if (diffDays < 0) {
-                ageText = `עוד ${Math.abs(diffDays)} ימים להולדת עוזי!`;
-                document.getElementById('puppyAge').textContent = ageText;
-                return;
-            }
-            
-            if (diffDays <= 1) {
+                ageText = `עוד ${Math.abs(diffDays)} ימים`;
+            } else if (diffDays <= 1) {
                 ageText = "נולד היום!";
             } else if (diffDays < 60) {
                 const weeks = Math.floor(diffDays / 7);
