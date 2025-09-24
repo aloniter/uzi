@@ -9,75 +9,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
+            min-height: 100vh; padding: 10px;
         }
-
-        .app-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-            display: block;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-        }
-
+        .app-container { max-width: 500px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; position: relative; }
         .header h1 { font-size: 28px; margin-bottom: 5px; }
-        .header .subtitle { opacity: 0.95; font-size: 14px; line-height: 1.5; margin-top: 5px; }
         #puppyAge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; margin-bottom: 5px; }
-
-        .connection-status {
-            position: absolute; top: 10px; right: 10px; width: 12px; height: 12px;
-            border-radius: 50%; background: #4CAF50; animation: pulse 2s infinite;
-        }
+        .connection-status { position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; background: #4CAF50; animation: pulse 2s infinite; }
         .connection-status.offline { background: #ff4444; animation: none; }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-        }
-
-        .user-indicator {
-            position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2);
-            padding: 5px 12px; border-radius: 20px; font-size: 12px;
-        }
-
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); } 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); } }
+        .user-indicator { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 12px; }
         .tabs { display: flex; background: #f5f5f5; border-bottom: 1px solid #ddd; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; transition: all 0.3s; font-weight: 500; color: #333; }
+        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: 500; color: #333; }
         .tab.active { background: white; color: #667eea; border-bottom: 3px solid #667eea; }
-
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
-
         .action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
-        .action-btn {
-            padding: 20px; border-radius: 15px; border: none; cursor: pointer; font-size: 16px;
-            font-weight: 600; transition: all 0.3s; display: flex; flex-direction: column;
-            align-items: center; gap: 8px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
-        .action-btn:active { transform: scale(0.95); }
+        .action-btn { padding: 20px; border-radius: 15px; border: none; cursor: pointer; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 8px; color: white; }
         .action-btn .emoji { font-size: 30px; }
-
         .action-btn.food { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
         .action-btn.sleep { background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%); }
         .action-btn.play { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
@@ -86,49 +39,17 @@
         .action-btn.poop { background: linear-gradient(135deg, #cd9cf2 0%, #f6f3ff 100%); color: #333; }
         .action-btn.walk { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); }
         .action-btn.vet { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
-
-        .history-item {
-            background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        .history-item .time { font-weight: 600; color: #667eea; }
-        .history-item .activity { display: flex; align-items: center; gap: 8px; }
-        .history-item .user { font-size: 12px; color: #666; background: #e0e0e0; padding: 2px 8px; border-radius: 10px; }
-        .delete-btn, .edit-btn {
-            color: white; border: none; padding: 4px 10px; border-radius: 5px;
-            cursor: pointer; font-size: 12px; margin-left: 5px;
-        }
+        .history-item { background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .delete-btn, .edit-btn { color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-left: 5px; }
         .delete-btn { background: #ff4444; }
         .edit-btn { background: #2196F3; }
-
         .user-switch { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; padding: 5px; border-radius: 10px; }
-        .user-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; background: transparent; }
+        .user-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; background: transparent; }
         .user-btn.active { background: white; color: #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        
-        .note-input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 10px; resize: none; }
-        .note-input:focus { outline: none; border-color: #667eea; }
-
-        .live-indicator { background: #4CAF50; color: white; padding: 4px 8px; border-radius: 5px; font-size: 10px; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
+        .note-input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; resize: none; }
         .day-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
-        .date-filter { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .date-filter input { flex: 1; padding: 8px; border: 2px solid #e0e0e0; border-radius: 8px; }
-        .date-filter button { padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; }
-
-        /* Edit Modal Styles */
-        .modal-overlay {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: #fefefe; margin: 15% auto; padding: 20px;
-            border-radius: 15px; border: 1px solid #888; width: 90%; max-width: 400px;
-        }
-        .modal-content h3 { margin-bottom: 15px; }
-        .modal-content label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: 600; }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
         .modal-buttons { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
         .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
         #modalSaveBtn { background-color: #4CAF50; color: white; }
@@ -142,16 +63,13 @@
             <div class="user-indicator" id="currentUserDisplay">משתמש: </div>
             <h1>🐕 עוזי</h1>
             <div class="subtitle">
-                <span id="puppyAge" style="font-weight: bold; font-size: 16px;"></span><br>
+                <span id="puppyAge"></span><br>
                 <span style="font-size: 12px;">נולד: 22.6.2025</span>
-                <span class="live-indicator" style="margin-right: 10px;">LIVE</span>
             </div>
         </div>
         <div class="tabs">
             <div class="tab active" data-tab="record">רישום</div>
             <div class="tab" data-tab="history">היסטוריה</div>
-            <div class="tab" data-tab="schedule">לו"ז</div>
-            <div class="tab" data-tab="stats">סטטיסטיקה</div>
         </div>
         <div id="record" class="tab-content active">
              <div class="user-switch">
@@ -171,28 +89,16 @@
             <textarea class="note-input" id="noteInput" placeholder="הוסף הערה (אופציונלי)..." rows="3"></textarea>
         </div>
         <div id="history" class="tab-content">
-             <div class="date-filter">
-                <input type="date" id="dateFilter">
-                <button id="showTodayBtn">היום</button>
-                <button id="showAllBtn">הכל</button>
-            </div>
             <div id="historyList"></div>
-        </div>
-        <div id="schedule" class="tab-content">
-             <p style="text-align:center; color:#999;">לוח הזמנים יתווסף בקרוב.</p>
-        </div>
-        <div id="stats" class="tab-content">
-             <p style="text-align:center; color:#999;">סטטיסטיקות יתווספו בקרוב.</p>
         </div>
     </div>
 
     <div id="editModal" class="modal-overlay">
         <div class="modal-content">
             <h3>עריכת פעילות</h3>
-            <input type="hidden" id="editActivityId">
-            <label for="editTime">שעה:</label>
+            <label>שעה:</label>
             <input type="time" id="editTime">
-            <label for="editNote">הערה:</label>
+            <label>הערה:</label>
             <textarea id="editNote" rows="3"></textarea>
             <div class="modal-buttons">
                 <button id="modalCancelBtn">ביטול</button>
@@ -202,33 +108,29 @@
     </div>
 
     <script>
-        // --- Global Variables ---
         let currentUser = 'אלון';
         let activities = [];
         let database = null;
-        let filterDate = null;
+        let currentEditId = null;
 
-        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyDj_SEXQ6irE7RL0_9RNkktzWSzPh8eVys",
             authDomain: "puppy-tracker-82cb0.firebaseapp.com",
-            databaseURL: "https://puppy-tracker-82cb0-default-rtdb.europe-west1.firebasedabase.app",
+            databaseURL: "https://puppy-tracker-82cb0-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "puppy-tracker-82cb0",
             storageBucket: "puppy-tracker-82cb0.firebasestorage.app",
             messagingSenderId: "565635528841",
             appId: "1:565635528841:web:e2bd7f4f10910d1ae1ae58"
         };
 
-        // --- Main Application Logic ---
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
                 setupFirebaseListeners();
-            } catch (error) {
-                console.error('Firebase initialization error:', error);
+            } catch (e) {
+                console.error("Firebase initialization failed:", e);
+                alert("לא ניתן להתחבר למסד הנתונים.");
             }
             setupEventListeners();
             loadInitialData();
@@ -238,44 +140,38 @@
             document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => switchToTab(tab.dataset.tab)));
             document.querySelectorAll('.user-btn').forEach(btn => btn.addEventListener('click', () => switchUser(btn.dataset.user)));
             document.querySelectorAll('.action-btn').forEach(btn => btn.addEventListener('click', () => recordActivity(btn.dataset.type, btn.dataset.emoji)));
-            document.getElementById('dateFilter').addEventListener('change', filterByDate);
-            document.getElementById('showTodayBtn').addEventListener('click', showToday);
-            document.getElementById('showAllBtn').addEventListener('click', showAll);
-            // Modal listeners
             document.getElementById('modalCancelBtn').addEventListener('click', closeEditModal);
             document.getElementById('modalSaveBtn').addEventListener('click', saveActivityChanges);
         }
 
         function loadInitialData() {
-            if (database) {
-                listenToActivities();
-            }
+            if (database) listenToActivities();
             calculatePuppyAge();
             setInterval(calculatePuppyAge, 60000);
             const savedUser = localStorage.getItem('currentUser');
-            switchUser(savedUser || 'אלון');
+            if (savedUser) switchUser(savedUser);
         }
 
-        // --- Firebase Functions ---
         function setupFirebaseListeners() {
-            firebase.database().ref('.info/connected').on('value', (snapshot) => {
-                const status = document.getElementById('connectionStatus');
-                status.classList.toggle('offline', !snapshot.val());
-                status.title = snapshot.val() ? 'מחובר' : 'לא מחובר';
+            database.ref('.info/connected').on('value', snapshot => {
+                document.getElementById('connectionStatus').classList.toggle('offline', !snapshot.val());
             });
         }
         
         function listenToActivities() {
-            database.ref('activities').on('value', (snapshot) => {
+            const activitiesRef = database.ref('activities');
+            activitiesRef.on('value', snapshot => {
                 const data = snapshot.val() || {};
                 activities = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
-                
-                const activeTab = document.querySelector('.tab.active').dataset.tab;
-                if (activeTab === 'history') displayHistory();
+                if (document.getElementById('history').classList.contains('active')) {
+                    displayHistory();
+                }
+            }, error => {
+                console.error("Error listening for activities:", error);
+                alert("שגיאה בקבלת נתונים. בדוק את חוקי האבטחה ב-Firebase.");
             });
         }
 
-        // --- UI & State Management ---
         function switchToTab(tabName) {
             document.querySelectorAll('.tab-content, .tab').forEach(el => el.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
@@ -291,7 +187,7 @@
         }
 
         async function recordActivity(type, emoji) {
-            if (!database) return alert('לא מחובר ל-Firebase');
+            if (!database) return alert('לא מחובר ל-Firebase.');
             const activity = {
                 type, emoji, user: currentUser,
                 note: document.getElementById('noteInput').value,
@@ -303,14 +199,15 @@
                 await database.ref('activities').push(activity);
                 document.getElementById('noteInput').value = '';
                 showNotification(`${emoji} ${type} נרשם בהצלחה!`);
-                switchToTab('history'); // Switch to history tab after recording
-            } catch (error) { alert('שגיאה ברישום: ' + error.message); }
+                switchToTab('history');
+            } catch (error) {
+                console.error("Failed to record activity:", error);
+                alert(`שגיאה ברישום הפעילות. ודא שחוקי האבטחה ב-Firebase מאפשרים כתיבה. שגיאה: ${error.message}`);
+            }
         }
         
-        // --- History & Editing Functions ---
         function displayHistory() {
-            let filtered = filterDate ? activities.filter(act => act.date === filterDate) : activities;
-            const grouped = filtered.reduce((acc, act) => {
+            const grouped = activities.reduce((acc, act) => {
                 (acc[act.date] = acc[act.date] || []).push(act);
                 return acc;
             }, {});
@@ -323,10 +220,10 @@
 
             document.getElementById('historyList').innerHTML = sortedDates.map(date => `
                 <div class="day-section">
-                    <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום - ' : ''}${date}</div>
+                    <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
                     ${grouped[date].map(act => `
                         <div class="history-item">
-                            <div class="activity" style="flex-grow: 1; text-align: right;">
+                            <div style="flex-grow: 1; text-align: right;">
                                 <span>${act.emoji} ${act.type}</span>
                                 ${act.note ? `<span style="color: #666; font-size: 12px; display: block;">(${act.note})</span>` : ''}
                             </div>
@@ -344,16 +241,14 @@
             if (confirm('האם למחוק את הפעילות?')) {
                 try {
                     await database.ref(`activities/${id}`).remove();
-                    showNotification('הפעילות נמחקה');
-                } catch (error) { alert('שגיאה במחיקה: ' + error.message); }
+                } catch (e) { alert(`שגיאת מחיקה: ${e.message}`); }
             }
         }
         
         function openEditModal(id) {
             const activity = activities.find(act => act.id === id);
             if (!activity) return;
-
-            document.getElementById('editActivityId').value = id;
+            currentEditId = id;
             document.getElementById('editTime').value = activity.time;
             document.getElementById('editNote').value = activity.note || '';
             document.getElementById('editModal').style.display = 'block';
@@ -364,56 +259,22 @@
         }
 
         async function saveActivityChanges() {
-            const id = document.getElementById('editActivityId').value;
-            const newTime = document.getElementById('editTime').value;
-            const newNote = document.getElementById('editNote').value;
-            
-            if (!id || !newTime) return alert("השעה היא שדה חובה.");
-            
+            if (!currentEditId) return;
+            const updates = {
+                time: document.getElementById('editTime').value,
+                note: document.getElementById('editNote').value
+            };
             try {
-                await database.ref(`activities/${id}`).update({ time: newTime, note: newNote });
-                showNotification('הפעילות עודכנה בהצלחה!');
+                await database.ref(`activities/${currentEditId}`).update(updates);
                 closeEditModal();
-            } catch (error) {
-                alert('שגיאה בעדכון: ' + error.message);
-            }
+            } catch (e) { alert(`שגיאת עדכון: ${e.message}`); }
         }
         
-        // --- History Filters ---
-        function filterByDate() {
-            filterDate = document.getElementById('dateFilter').value ? new Date(document.getElementById('dateFilter').value).toLocaleDateString('he-IL') : null;
-            displayHistory();
-        }
-        function showToday() {
-            filterDate = new Date().toLocaleDateString('he-IL');
-            document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
-            displayHistory();
-        }
-        function showAll() {
-            filterDate = null;
-            document.getElementById('dateFilter').value = '';
-            displayHistory();
-        }
-        
-        // --- Utility Functions ---
         function calculatePuppyAge() {
-            const birthDate = new Date(2025, 5, 22); // Month is 0-indexed (5 = June)
+            const birthDate = new Date(2025, 5, 22);
             const diffDays = Math.floor((new Date() - birthDate) / (1000 * 60 * 60 * 24));
-            let ageText;
-            if (diffDays < 0) {
-                ageText = `עוד ${Math.abs(diffDays)} ימים`;
-            } else if (diffDays <= 1) {
-                ageText = "נולד היום!";
-            } else if (diffDays < 60) {
-                const weeks = Math.floor(diffDays / 7);
-                const days = diffDays % 7;
-                ageText = `בן ${weeks} שבועות ו-${days} ימים`;
-            } else {
-                const months = Math.floor(diffDays / 30.44);
-                const days = Math.floor(diffDays % 30.44);
-                ageText = `בן ${months} חודשים ו-${days} ימים`;
-            }
-            document.getElementById('puppyAge').textContent = `${ageText} (${diffDays} ימים)`;
+            let ageText = diffDays < 0 ? `עוד ${Math.abs(diffDays)} ימים` : `בן ${diffDays} ימים`;
+            document.getElementById('puppyAge').textContent = ageText;
         }
 
         function showNotification(message) {
