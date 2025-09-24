@@ -54,6 +54,15 @@
         .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
         #modalSaveBtn { background-color: #4CAF50; color: white; }
         #modalCancelBtn { background-color: #f44336; color: white; }
+        /* Schedule Styles */
+        .schedule-item { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-right: 4px solid #667eea; position: relative; display: flex; align-items: center; gap: 15px; }
+        .schedule-item.edit-mode { background: #f0f4ff; border: 2px solid #2196F3; display: flex; gap: 5px; }
+        .schedule-item .time { font-size: 18px; font-weight: 600; color: #667eea; }
+        .schedule-item .activity { color: #333; }
+        .schedule-item.edit-mode .delete-schedule-btn { background: #ff4444; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; }
+        .schedule-item.edit-mode input[type="time"] { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-weight: 600; color: #667eea; }
+        .schedule-item.edit-mode input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        #scheduleEditSection button { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -70,6 +79,7 @@
         <div class="tabs">
             <div class="tab active" data-tab="record">רישום</div>
             <div class="tab" data-tab="history">היסטוריה</div>
+            <div class="tab" data-tab="schedule">לו"ז</div>
         </div>
         <div id="record" class="tab-content active">
              <div class="user-switch">
@@ -90,6 +100,18 @@
         </div>
         <div id="history" class="tab-content">
             <div id="historyList"></div>
+        </div>
+        <div id="schedule" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 18px; font-weight: 600; color: #333;">לוח זמנים יומי</div>
+                <button id="editScheduleBtn" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer;">✏️ ערוך לו"ז</button>
+            </div>
+            <div id="scheduleItems"></div>
+            <div id="scheduleEditSection" style="display: none;">
+                <button id="addScheduleItemBtn">➕ הוסף פעילות חדשה</button>
+                <button id="saveScheduleBtn" style="background: #4CAF50;">💾 שמור לו"ז</button>
+                <button id="resetScheduleBtn" style="background: #ff9800;">🔄 אפס לברירת מחדל</button>
+            </div>
         </div>
     </div>
 
@@ -112,6 +134,18 @@
         let activities = [];
         let database = null;
         let currentEditId = null;
+        let schedule = [];
+        let isEditingSchedule = false;
+
+        const defaultSchedule = [
+            { time: "06:00", activity: "🌅 השכמה + פיפי ראשון" }, { time: "06:30", activity: "🍖 ארוחת בוקר" },
+            { time: "08:00", activity: "🚶 טיול קצר + צרכים" }, { time: "09:00", activity: "🎾 זמן משחק ופעילות" },
+            { time: "10:00", activity: "😴 תנומה" }, { time: "12:00", activity: "🍖 ארוחת צהריים" },
+            { time: "13:00", activity: "🚶 טיול + צרכים" }, { time: "14:00", activity: "🎯 זמן אימון (5-10 דקות)" },
+            { time: "15:00", activity: "😴 מנוחת אחה\"צ" }, { time: "17:00", activity: "🎾 משחק ופעילות" },
+            { time: "18:00", activity: "🍖 ארוחת ערב" }, { time: "19:00", activity: "🚶 טיול ערב + צרכים" },
+            { time: "21:00", activity: "😴 הכנה לשינת לילה" }, { time: "23:00", activity: "💧 פיפי אחרון לפני השינה" }
+        ];
 
         const firebaseConfig = {
             apiKey: "AIzaSyDj_SEXQ6irE7RL0_9RNkktzWSzPh8eVys",
@@ -128,10 +162,7 @@
                 firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
                 setupFirebaseListeners();
-            } catch (e) {
-                console.error("Firebase initialization failed:", e);
-                alert("לא ניתן להתחבר למסד הנתונים.");
-            }
+            } catch (e) { console.error("Firebase initialization failed:", e); }
             setupEventListeners();
             loadInitialData();
         });
@@ -142,10 +173,18 @@
             document.querySelectorAll('.action-btn').forEach(btn => btn.addEventListener('click', () => recordActivity(btn.dataset.type, btn.dataset.emoji)));
             document.getElementById('modalCancelBtn').addEventListener('click', closeEditModal);
             document.getElementById('modalSaveBtn').addEventListener('click', saveActivityChanges);
+            // Schedule Listeners
+            document.getElementById('editScheduleBtn').addEventListener('click', toggleScheduleEdit);
+            document.getElementById('addScheduleItemBtn').addEventListener('click', addScheduleItem);
+            document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
+            document.getElementById('resetScheduleBtn').addEventListener('click', resetSchedule);
         }
 
         function loadInitialData() {
-            if (database) listenToActivities();
+            if (database) {
+                listenToActivities();
+                loadSchedule();
+            }
             calculatePuppyAge();
             setInterval(calculatePuppyAge, 60000);
             const savedUser = localStorage.getItem('currentUser');
@@ -159,16 +198,10 @@
         }
         
         function listenToActivities() {
-            const activitiesRef = database.ref('activities');
-            activitiesRef.on('value', snapshot => {
+            database.ref('activities').on('value', snapshot => {
                 const data = snapshot.val() || {};
                 activities = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
-                if (document.getElementById('history').classList.contains('active')) {
-                    displayHistory();
-                }
-            }, error => {
-                console.error("Error listening for activities:", error);
-                alert("שגיאה בקבלת נתונים. בדוק את חוקי האבטחה ב-Firebase.");
+                if (document.getElementById('history').classList.contains('active')) displayHistory();
             });
         }
 
@@ -177,6 +210,7 @@
             document.getElementById(tabName).classList.add('active');
             document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
             if (tabName === 'history') displayHistory();
+            if (tabName === 'schedule') loadSchedule();
         }
 
         function switchUser(user) {
@@ -202,7 +236,7 @@
                 switchToTab('history');
             } catch (error) {
                 console.error("Failed to record activity:", error);
-                alert(`שגיאה ברישום הפעילות. ודא שחוקי האבטחה ב-Firebase מאפשרים כתיבה. שגיאה: ${error.message}`);
+                alert(`שגיאה ברישום הפעילות: ${error.message}`);
             }
         }
         
@@ -212,11 +246,7 @@
                 return acc;
             }, {});
             
-            const sortedDates = Object.keys(grouped).sort((a, b) => {
-                const dateA = a.split('.').reverse().join('-');
-                const dateB = b.split('.').reverse().join('-');
-                return dateB.localeCompare(dateA);
-            });
+            const sortedDates = Object.keys(grouped).sort((a, b) => a.split('.').reverse().join('-').localeCompare(b.split('.').reverse().join('-'))).reverse();
 
             document.getElementById('historyList').innerHTML = sortedDates.map(date => `
                 <div class="day-section">
@@ -239,9 +269,7 @@
 
         async function deleteActivity(id) {
             if (confirm('האם למחוק את הפעילות?')) {
-                try {
-                    await database.ref(`activities/${id}`).remove();
-                } catch (e) { alert(`שגיאת מחיקה: ${e.message}`); }
+                try { await database.ref(`activities/${id}`).remove(); } catch (e) { alert(`שגיאת מחיקה: ${e.message}`); }
             }
         }
         
@@ -275,6 +303,75 @@
             const diffDays = Math.floor((new Date() - birthDate) / (1000 * 60 * 60 * 24));
             let ageText = diffDays < 0 ? `עוד ${Math.abs(diffDays)} ימים` : `בן ${diffDays} ימים`;
             document.getElementById('puppyAge').textContent = ageText;
+        }
+
+        // --- Schedule Functions ---
+        function loadSchedule() {
+            if (!database) return;
+            database.ref('schedule').once('value', snapshot => {
+                const data = snapshot.val();
+                schedule = data ? data : JSON.parse(JSON.stringify(defaultSchedule));
+                displaySchedule();
+            });
+        }
+
+        function displaySchedule() {
+            const container = document.getElementById('scheduleItems');
+            schedule.sort((a, b) => a.time.localeCompare(b.time));
+            container.innerHTML = schedule.map((item, index) => {
+                if (isEditingSchedule) {
+                    return `
+                    <div class="schedule-item edit-mode">
+                        <input type="time" value="${item.time}" onchange="updateScheduleItem(${index}, 'time', this.value)">
+                        <input type="text" value="${item.activity}" onchange="updateScheduleItem(${index}, 'activity', this.value)" placeholder="תיאור הפעילות...">
+                        <button class="delete-schedule-btn" onclick="removeScheduleItem(${index})">🗑️</button>
+                    </div>`;
+                }
+                return `
+                    <div class="schedule-item">
+                        <div class="time">${item.time}</div>
+                        <div class="activity">${item.activity}</div>
+                    </div>`;
+            }).join('');
+        }
+        
+        function toggleScheduleEdit() {
+            isEditingSchedule = !isEditingSchedule;
+            document.getElementById('editScheduleBtn').textContent = isEditingSchedule ? '❌ בטל עריכה' : '✏️ ערוך לו"ז';
+            document.getElementById('scheduleEditSection').style.display = isEditingSchedule ? 'block' : 'none';
+            displaySchedule();
+        }
+
+        function updateScheduleItem(index, key, value) {
+            schedule[index][key] = value;
+        }
+
+        function removeScheduleItem(index) {
+            if (confirm('למחוק את הפעילות מהלו"ז?')) {
+                schedule.splice(index, 1);
+                displaySchedule();
+            }
+        }
+
+        function addScheduleItem() {
+            schedule.push({ time: "12:00", activity: "פעילות חדשה" });
+            displaySchedule();
+        }
+
+        async function saveSchedule() {
+            if (!database) return;
+            try {
+                await database.ref('schedule').set(schedule);
+                showNotification('הלו"ז נשמר בהצלחה!');
+                toggleScheduleEdit();
+            } catch (e) { alert(`שגיאה בשמירת הלו"ז: ${e.message}`); }
+        }
+
+        function resetSchedule() {
+            if (confirm('לאפס את הלו"ז לברירת המחדל?')) {
+                schedule = JSON.parse(JSON.stringify(defaultSchedule));
+                displaySchedule();
+            }
         }
 
         function showNotification(message) {
