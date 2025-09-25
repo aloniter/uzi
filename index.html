@@ -68,6 +68,10 @@
         .schedule-item.edit-mode input[type="time"] { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-weight: 600; color: #667eea; }
         .schedule-item.edit-mode input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
         #scheduleEditSection button { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
+        /* Filter Styles -- NEW */
+        #historyFilters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .filter-btn { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; background-color: #f0f0f0; cursor: pointer; font-weight: 500; }
+        .filter-btn.active { background-color: #667eea; color: white; border-color: #667eea; }
     </style>
 </head>
 <body>
@@ -104,6 +108,7 @@
             <textarea class="note-input" id="noteInput" placeholder="הוסף הערה (אופציונלי)..." rows="3"></textarea>
         </div>
         <div id="history" class="tab-content">
+            <div id="historyFilters"></div>
             <div id="historyList"></div>
         </div>
         <div id="schedule" class="tab-content">
@@ -141,6 +146,7 @@
         let currentEditId = null;
         let schedule = [];
         let isEditingSchedule = false;
+        let currentFilter = 'הכל'; // NEW: To keep track of the current filter
 
         const defaultSchedule = [
             { time: "06:00", activity: "🌅 השכמה + פיפי ראשון" }, { time: "06:30", activity: "🍖 ארוחת בוקר" },
@@ -150,6 +156,13 @@
             { time: "15:00", activity: "😴 מנוחת אחה\"צ" }, { time: "17:00", activity: "🎾 משחק ופעילות" },
             { time: "18:00", activity: "🍖 ארוחת ערב" }, { time: "19:00", activity: "🚶 טיול ערב + צרכים" },
             { time: "21:00", activity: "😴 הכנה לשינת לילה" }, { time: "23:00", activity: "💧 פיפי אחרון לפני השינה" }
+        ];
+        
+        // NEW: Define activity types for dynamic filter generation
+        const activityTypes = [
+            { type: 'אוכל', emoji: '🍖' }, { type: 'שינה', emoji: '😴' }, { type: 'משחק', emoji: '🎾' }, 
+            { type: 'אימון', emoji: '🎯' }, { type: 'פיפי', emoji: '💧' }, { type: 'קקי', emoji: '💩' }, 
+            { type: 'טיול', emoji: '🚶' }, { type: 'וטרינר', emoji: '🏥' }
         ];
 
         const firebaseConfig = {
@@ -170,6 +183,7 @@
             } catch (e) { console.error("Firebase initialization failed:", e); }
             setupEventListeners();
             loadInitialData();
+            renderFilterButtons(); // NEW: Call function to create filter buttons
         });
 
         function setupEventListeners() {
@@ -183,6 +197,12 @@
             document.getElementById('addScheduleItemBtn').addEventListener('click', addScheduleItem);
             document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
             document.getElementById('resetScheduleBtn').addEventListener('click', resetSchedule);
+            // NEW: Event listener for filter buttons
+            document.getElementById('historyFilters').addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-btn')) {
+                    handleFilterClick(e.target.dataset.type);
+                }
+            });
         }
 
         function loadInitialData() {
@@ -206,7 +226,9 @@
             database.ref('activities').on('value', snapshot => {
                 const data = snapshot.val() || {};
                 activities = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
-                if (document.getElementById('history').classList.contains('active')) displayHistory();
+                if (document.getElementById('history').classList.contains('active')) {
+                    displayHistory();
+                }
             });
         }
 
@@ -245,15 +267,46 @@
             }
         }
         
+        // --- NEW AND UPDATED HISTORY/FILTER FUNCTIONS ---
+
+        function renderFilterButtons() {
+            const container = document.getElementById('historyFilters');
+            let buttonsHTML = `<button class="filter-btn active" data-type="הכל"> הכל </button>`;
+            activityTypes.forEach(activity => {
+                buttonsHTML += `<button class="filter-btn" data-type="${activity.type}">${activity.emoji} ${activity.type}</button>`;
+            });
+            container.innerHTML = buttonsHTML;
+        }
+
+        function handleFilterClick(filterType) {
+            currentFilter = filterType;
+            // Update active class on buttons
+            document.querySelectorAll('#historyFilters .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === currentFilter);
+            });
+            displayHistory();
+        }
+        
         function displayHistory() {
-            const grouped = activities.reduce((acc, act) => {
+            // Filter activities based on the current filter
+            const filteredActivities = (currentFilter === 'הכל') 
+                ? activities 
+                : activities.filter(act => act.type === currentFilter);
+
+            const grouped = filteredActivities.reduce((acc, act) => {
                 (acc[act.date] = acc[act.date] || []).push(act);
                 return acc;
             }, {});
             
             const sortedDates = Object.keys(grouped).sort((a, b) => a.split('.').reverse().join('-').localeCompare(b.split('.').reverse().join('-'))).reverse();
 
-            document.getElementById('historyList').innerHTML = sortedDates.map(date => `
+            const historyList = document.getElementById('historyList');
+            if (filteredActivities.length === 0) {
+                 historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
+                 return;
+            }
+
+            historyList.innerHTML = sortedDates.map(date => `
                 <div class="day-section">
                     <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
                     ${grouped[date].map(act => `
@@ -269,8 +322,9 @@
                                 <button class="delete-btn" onclick="deleteActivity('${act.id}')">מחק</button>
                             </div>
                         </div>`).join('')}
-                </div>`).join('') || '<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות</div>';
+                </div>`).join('');
         }
+        // --- END OF NEW/UPDATED FUNCTIONS ---
 
         async function deleteActivity(id) {
             if (confirm('האם למחוק את הפעילות?')) {
