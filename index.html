@@ -51,7 +51,7 @@
         .user-switch { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; padding: 5px; border-radius: 10px; }
         .user-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; background: transparent; }
         .user-btn.active { background: white; color: #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .note-input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; resize: none; }
+        .note-input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; resize: none; margin-bottom: 10px; }
         .day-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 15px; border-radius: 10px; margin-bottom: 10px; font-weight: 600; }
         .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
@@ -59,7 +59,6 @@
         .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
         #modalSaveBtn { background-color: #4CAF50; color: white; }
         #modalCancelBtn { background-color: #f44336; color: white; }
-        /* Schedule Styles */
         .schedule-item { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-right: 4px solid #667eea; position: relative; display: flex; align-items: center; gap: 15px; }
         .schedule-item.edit-mode { background: #f0f4ff; border: 2px solid #2196F3; display: flex; gap: 5px; }
         .schedule-item .time { font-size: 18px; font-weight: 600; color: #667eea; }
@@ -68,10 +67,13 @@
         .schedule-item.edit-mode input[type="time"] { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-weight: 600; color: #667eea; }
         .schedule-item.edit-mode input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
         #scheduleEditSection button { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
-        /* Filter Styles -- NEW */
         #historyFilters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
         .filter-btn { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; background-color: #f0f0f0; cursor: pointer; font-weight: 500; }
         .filter-btn.active { background-color: #667eea; color: white; border-color: #667eea; }
+        #addQuestionBtn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #2196F3; color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .question-item { background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .question-item .text { flex-grow: 1; white-space: pre-wrap; word-wrap: break-word; }
+        .question-item .meta { text-align: left; font-size: 12px; color: #666; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -89,6 +91,7 @@
             <div class="tab active" data-tab="record">רישום</div>
             <div class="tab" data-tab="history">היסטוריה</div>
             <div class="tab" data-tab="schedule">לו"ז</div>
+            <div class="tab" data-tab="questions">שאלות לתמיר</div>
         </div>
         <div id="record" class="tab-content active">
              <div class="user-switch">
@@ -123,6 +126,12 @@
                 <button id="resetScheduleBtn" style="background: #ff9800;">🔄 אפס לברירת מחדל</button>
             </div>
         </div>
+        <div id="questions" class="tab-content">
+            <div style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">שאלות לתמיר</div>
+            <textarea class="note-input" id="questionInput" placeholder="כתוב כאן שאלה..." rows="4"></textarea>
+            <button id="addQuestionBtn">➕ הוסף שאלה</button>
+            <div id="questionsList" style="margin-top: 20px;"></div>
+        </div>
     </div>
 
     <div id="editModal" class="modal-overlay">
@@ -142,11 +151,12 @@
     <script>
         let currentUser = 'אלון';
         let activities = [];
+        let questions = [];
         let database = null;
         let currentEditId = null;
         let schedule = [];
         let isEditingSchedule = false;
-        let currentFilter = 'הכל'; // NEW: To keep track of the current filter
+        let currentFilter = 'הכל';
 
         const defaultSchedule = [
             { time: "06:00", activity: "🌅 השכמה + פיפי ראשון" }, { time: "06:30", activity: "🍖 ארוחת בוקר" },
@@ -158,7 +168,6 @@
             { time: "21:00", activity: "😴 הכנה לשינת לילה" }, { time: "23:00", activity: "💧 פיפי אחרון לפני השינה" }
         ];
         
-        // NEW: Define activity types for dynamic filter generation
         const activityTypes = [
             { type: 'אוכל', emoji: '🍖' }, { type: 'שינה', emoji: '😴' }, { type: 'משחק', emoji: '🎾' }, 
             { type: 'אימון', emoji: '🎯' }, { type: 'פיפי', emoji: '💧' }, { type: 'קקי', emoji: '💩' }, 
@@ -183,7 +192,7 @@
             } catch (e) { console.error("Firebase initialization failed:", e); }
             setupEventListeners();
             loadInitialData();
-            renderFilterButtons(); // NEW: Call function to create filter buttons
+            renderFilterButtons();
         });
 
         function setupEventListeners() {
@@ -192,26 +201,26 @@
             document.querySelectorAll('.action-btn').forEach(btn => btn.addEventListener('click', () => recordActivity(btn.dataset.type, btn.dataset.emoji)));
             document.getElementById('modalCancelBtn').addEventListener('click', closeEditModal);
             document.getElementById('modalSaveBtn').addEventListener('click', saveActivityChanges);
-            // Schedule Listeners
             document.getElementById('editScheduleBtn').addEventListener('click', toggleScheduleEdit);
             document.getElementById('addScheduleItemBtn').addEventListener('click', addScheduleItem);
             document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
             document.getElementById('resetScheduleBtn').addEventListener('click', resetSchedule);
-            // NEW: Event listener for filter buttons
             document.getElementById('historyFilters').addEventListener('click', (e) => {
                 if (e.target.classList.contains('filter-btn')) {
                     handleFilterClick(e.target.dataset.type);
                 }
             });
+            document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
         }
 
         function loadInitialData() {
             if (database) {
                 listenToActivities();
                 loadSchedule();
+                listenToQuestions();
             }
             calculatePuppyAge();
-            setInterval(calculatePuppyAge, 60000);
+            setInterval(calculatePuppyAge, 3600000); // Check age every hour
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) switchUser(savedUser);
         }
@@ -238,6 +247,7 @@
             document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
             if (tabName === 'history') displayHistory();
             if (tabName === 'schedule') loadSchedule();
+            if (tabName === 'questions') displayQuestions();
         }
 
         function switchUser(user) {
@@ -267,8 +277,6 @@
             }
         }
         
-        // --- NEW AND UPDATED HISTORY/FILTER FUNCTIONS ---
-
         function renderFilterButtons() {
             const container = document.getElementById('historyFilters');
             let buttonsHTML = `<button class="filter-btn active" data-type="הכל"> הכל </button>`;
@@ -280,7 +288,6 @@
 
         function handleFilterClick(filterType) {
             currentFilter = filterType;
-            // Update active class on buttons
             document.querySelectorAll('#historyFilters .filter-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.type === currentFilter);
             });
@@ -288,24 +295,19 @@
         }
         
         function displayHistory() {
-            // Filter activities based on the current filter
             const filteredActivities = (currentFilter === 'הכל') 
                 ? activities 
                 : activities.filter(act => act.type === currentFilter);
-
             const grouped = filteredActivities.reduce((acc, act) => {
                 (acc[act.date] = acc[act.date] || []).push(act);
                 return acc;
             }, {});
-            
             const sortedDates = Object.keys(grouped).sort((a, b) => a.split('.').reverse().join('-').localeCompare(b.split('.').reverse().join('-'))).reverse();
-
             const historyList = document.getElementById('historyList');
             if (filteredActivities.length === 0) {
                  historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
                  return;
             }
-
             historyList.innerHTML = sortedDates.map(date => `
                 <div class="day-section">
                     <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
@@ -324,7 +326,6 @@
                         </div>`).join('')}
                 </div>`).join('');
         }
-        // --- END OF NEW/UPDATED FUNCTIONS ---
 
         async function deleteActivity(id) {
             if (confirm('האם למחוק את הפעילות?')) {
@@ -357,12 +358,52 @@
             } catch (e) { alert(`שגיאת עדכון: ${e.message}`); }
         }
         
+        // --- UPDATED Puppy Age Calculation ---
         function calculatePuppyAge() {
-            const birthDate = new Date(2025, 5, 22);
-            const diffDays = Math.floor((new Date() - birthDate) / (1000 * 60 * 60 * 24));
-            let ageText = diffDays < 0 ? `עוד ${Math.abs(diffDays)} ימים` : `בן ${diffDays} ימים`;
+            const birthDate = new Date(2025, 5, 22); // Month is 0-indexed, so 5 is June
+            const today = new Date();
+
+            if (today < birthDate) {
+                const diffDays = Math.ceil((birthDate - today) / (1000 * 60 * 60 * 24));
+                document.getElementById('puppyAge').textContent = `עוד ${diffDays} ${diffDays === 1 ? 'יום' : 'ימים'}`;
+                return;
+            }
+
+            let years = today.getFullYear() - birthDate.getFullYear();
+            let months = today.getMonth() - birthDate.getMonth();
+            let days = today.getDate() - birthDate.getDate();
+
+            if (days < 0) {
+                months--;
+                const lastDayOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+                days += lastDayOfPrevMonth;
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            months += years * 12;
+
+            let ageParts = [];
+            if (months > 0) {
+                ageParts.push(`${months} ${months === 1 ? 'חודש' : 'חודשים'}`);
+            }
+            if (days > 0) {
+                ageParts.push(`${days} ${days === 1 ? 'יום' : 'ימים'}`);
+            }
+            
+            let ageText;
+            if (ageParts.length === 0) {
+                ageText = 'היום נולד!';
+            } else {
+                ageText = `בן ${ageParts.join(' ו')}`;
+            }
+
             document.getElementById('puppyAge').textContent = ageText;
         }
+
 
         // --- Schedule Functions ---
         function loadSchedule() {
@@ -373,7 +414,6 @@
                 displaySchedule();
             });
         }
-
         function displaySchedule() {
             const container = document.getElementById('scheduleItems');
             schedule.sort((a, b) => a.time.localeCompare(b.time));
@@ -393,30 +433,23 @@
                     </div>`;
             }).join('');
         }
-        
         function toggleScheduleEdit() {
             isEditingSchedule = !isEditingSchedule;
             document.getElementById('editScheduleBtn').textContent = isEditingSchedule ? '❌ בטל עריכה' : '✏️ ערוך לו"ז';
             document.getElementById('scheduleEditSection').style.display = isEditingSchedule ? 'block' : 'none';
             displaySchedule();
         }
-
-        function updateScheduleItem(index, key, value) {
-            schedule[index][key] = value;
-        }
-
+        function updateScheduleItem(index, key, value) { schedule[index][key] = value; }
         function removeScheduleItem(index) {
             if (confirm('למחוק את הפעילות מהלו"ז?')) {
                 schedule.splice(index, 1);
                 displaySchedule();
             }
         }
-
         function addScheduleItem() {
             schedule.push({ time: "12:00", activity: "פעילות חדשה" });
             displaySchedule();
         }
-
         async function saveSchedule() {
             if (!database) return;
             try {
@@ -425,11 +458,70 @@
                 toggleScheduleEdit();
             } catch (e) { alert(`שגיאה בשמירת הלו"ז: ${e.message}`); }
         }
-
         function resetSchedule() {
             if (confirm('לאפס את הלו"ז לברירת המחדל?')) {
                 schedule = JSON.parse(JSON.stringify(defaultSchedule));
                 displaySchedule();
+            }
+        }
+        
+        // --- Questions Functions ---
+        function listenToQuestions() {
+            database.ref('questions').on('value', snapshot => {
+                const data = snapshot.val() || {};
+                questions = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
+                if (document.getElementById('questions').classList.contains('active')) {
+                    displayQuestions();
+                }
+            });
+        }
+        async function addQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const questionText = questionInput.value.trim();
+            if (!questionText) {
+                alert("יש לכתוב שאלה.");
+                return;
+            }
+            if (!database) return alert('לא מחובר ל-Firebase.');
+            const question = {
+                text: questionText,
+                user: currentUser,
+                date: new Date().toLocaleDateString('he-IL'),
+                timestamp: Date.now()
+            };
+            try {
+                await database.ref('questions').push(question);
+                questionInput.value = '';
+                showNotification(`שאלה נוספה בהצלחה!`);
+            } catch (error) {
+                console.error("Failed to add question:", error);
+                alert(`שגיאה בהוספת השאלה: ${error.message}`);
+            }
+        }
+        function displayQuestions() {
+            const container = document.getElementById('questionsList');
+            if (questions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">אין עדיין שאלות</div>';
+                return;
+            }
+            container.innerHTML = questions.map(q => `
+                <div class="question-item">
+                    <div class="text">${q.text}</div>
+                    <div class="meta">
+                        <div>${q.date}</div>
+                        <div>${q.user}</div>
+                        <button class="delete-btn" onclick="deleteQuestion('${q.id}')" style="margin-top: 5px;">מחק</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        async function deleteQuestion(id) {
+            if (confirm('האם למחוק את השאלה?')) {
+                try {
+                    await database.ref(`questions/${id}`).remove();
+                } catch (e) {
+                    alert(`שגיאת מחיקה: ${e.message}`);
+                }
             }
         }
 
@@ -443,3 +535,4 @@
     </script>
 </body>
 </html>
+```
