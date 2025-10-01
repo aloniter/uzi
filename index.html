@@ -220,7 +220,7 @@
                 listenToQuestions();
             }
             calculatePuppyAge();
-            setInterval(calculatePuppyAge, 3600000); // Check age every hour
+            setInterval(calculatePuppyAge, 3600000); 
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) switchUser(savedUser);
         }
@@ -231,13 +231,15 @@
             });
         }
         
+        // ✅ עדכון – ההיסטוריה מתעדכנת תמיד
         function listenToActivities() {
             database.ref('activities').on('value', snapshot => {
                 const data = snapshot.val() || {};
-                activities = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
-                if (document.getElementById('history').classList.contains('active')) {
-                    displayHistory();
-                }
+                activities = Object.keys(data)
+                    .map(key => ({ ...data[key], id: key }))
+                    .sort((a, b) => b.timestamp - a.timestamp);
+
+                displayHistory(); // תמיד נעדכן
             });
         }
 
@@ -295,13 +297,20 @@
         }
         
         function displayHistory() {
+            if (!activities.length) {
+                document.getElementById('historyList').innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה</div>`;
+                return;
+            }
+
             const filteredActivities = (currentFilter === 'הכל') 
                 ? activities 
                 : activities.filter(act => act.type === currentFilter);
+
             const grouped = filteredActivities.reduce((acc, act) => {
                 (acc[act.date] = acc[act.date] || []).push(act);
                 return acc;
             }, {});
+
             const sortedDates = Object.keys(grouped).sort((a, b) => a.split('.').reverse().join('-').localeCompare(b.split('.').reverse().join('-'))).reverse();
             const historyList = document.getElementById('historyList');
             if (filteredActivities.length === 0) {
@@ -358,9 +367,8 @@
             } catch (e) { alert(`שגיאת עדכון: ${e.message}`); }
         }
         
-        // --- UPDATED Puppy Age Calculation ---
         function calculatePuppyAge() {
-            const birthDate = new Date(2025, 5, 22); // Month is 0-indexed, so 5 is June
+            const birthDate = new Date(2025, 5, 22); 
             const today = new Date();
 
             if (today < birthDate) {
@@ -535,4 +543,3 @@
     </script>
 </body>
 </html>
-```
