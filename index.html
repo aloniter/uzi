@@ -295,37 +295,48 @@
         }
         
         function displayHistory() {
-            const filteredActivities = (currentFilter === 'הכל') 
-                ? activities 
-                : activities.filter(act => act.type === currentFilter);
-            const grouped = filteredActivities.reduce((acc, act) => {
-                (acc[act.date] = acc[act.date] || []).push(act);
-                return acc;
-            }, {});
-            const sortedDates = Object.keys(grouped).sort((a, b) => a.split('.').reverse().join('-').localeCompare(b.split('.').reverse().join('-'))).reverse();
-            const historyList = document.getElementById('historyList');
-            if (filteredActivities.length === 0) {
-                 historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
-                 return;
-            }
-            historyList.innerHTML = sortedDates.map(date => `
-                <div class="day-section">
-                    <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
-                    ${grouped[date].map(act => `
-                        <div class="history-item">
-                            <div style="flex-grow: 1; text-align: right;">
-                                <span>${act.emoji} ${act.type}</span>
-                                ${act.note ? `<span style="color: #666; font-size: 12px; display: block;">(${act.note})</span>` : ''}
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
-                                <span class="time">${act.time}</span>
-                                <span class="user">${act.user}</span>
-                                <button class="edit-btn" onclick="openEditModal('${act.id}')">ערוך</button>
-                                <button class="delete-btn" onclick="deleteActivity('${act.id}')">מחק</button>
-                            </div>
-                        </div>`).join('')}
-                </div>`).join('');
-        }
+    const filteredActivities = (currentFilter === 'הכל') 
+        ? activities 
+        : activities.filter(act => act.type === currentFilter);
+
+    const grouped = filteredActivities.reduce((acc, act) => {
+        (acc[act.date] = acc[act.date] || []).push(act);
+        return acc;
+    }, {});
+
+    // ✅ ממיינים לפי הפעולה הכי חדשה בכל יום
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+        const maxA = Math.max(...grouped[a].map(act => act.timestamp));
+        const maxB = Math.max(...grouped[b].map(act => act.timestamp));
+        return maxB - maxA; // יום עם הפעילות הכי חדשה ראשון
+    });
+
+    const historyList = document.getElementById('historyList');
+    if (filteredActivities.length === 0) {
+         historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
+         return;
+    }
+
+    historyList.innerHTML = sortedDates.map(date => `
+        <div class="day-section">
+            <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
+            ${grouped[date]
+                .sort((a, b) => b.timestamp - a.timestamp) // ✅ פעילויות מהחדש לישן
+                .map(act => `
+                <div class="history-item">
+                    <div style="flex-grow: 1; text-align: right;">
+                        <span>${act.emoji} ${act.type}</span>
+                        ${act.note ? `<span style="color: #666; font-size: 12px; display: block;">(${act.note})</span>` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                        <span class="time">${act.time}</span>
+                        <span class="user">${act.user}</span>
+                        <button class="edit-btn" onclick="openEditModal('${act.id}')">ערוך</button>
+                        <button class="delete-btn" onclick="deleteActivity('${act.id}')">מחק</button>
+                    </div>
+                </div>`).join('')}
+        </div>`).join('');
+}
 
         async function deleteActivity(id) {
             if (confirm('האם למחוק את הפעילות?')) {
