@@ -1,3 +1,8 @@
+הבנתי את הבעיה - כשאתה משנה את השעה של פעילות, היא נשארת באותו מיקום כי המיון מתבצע לפי `timestamp` (זמן ההוספה המקורי) ולא לפי השעה בפועל.
+
+הנה הקוד המעודכן והמלא עם התיקון:
+
+```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -220,7 +225,7 @@
                 listenToQuestions();
             }
             calculatePuppyAge();
-            setInterval(calculatePuppyAge, 3600000); // Check age every hour
+            setInterval(calculatePuppyAge, 3600000);
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) switchUser(savedUser);
         }
@@ -234,7 +239,7 @@
         function listenToActivities() {
             database.ref('activities').on('value', snapshot => {
                 const data = snapshot.val() || {};
-                activities = Object.keys(data).map(key => ({ ...data[key], id: key })).sort((a, b) => b.timestamp - a.timestamp);
+                activities = Object.keys(data).map(key => ({ ...data[key], id: key }));
                 if (document.getElementById('history').classList.contains('active')) {
                     displayHistory();
                 }
@@ -294,49 +299,64 @@
             displayHistory();
         }
         
+        // ✅ פונקציה חדשה להמרת שעה לדקות (למיון)
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // ✅ פונקציה חדשה ליצירת מזהה זמן ייחודי למיון
+        function createSortKey(activity) {
+            // ממירים תאריך ישראלי (DD.MM.YYYY) לפורמט שניתן למיון
+            const dateParts = activity.date.split('.');
+            const dateKey = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+            const timeKey = timeToMinutes(activity.time);
+            return `${dateKey}-${timeKey.toString().padStart(4, '0')}`;
+        }
+
         function displayHistory() {
-    const filteredActivities = (currentFilter === 'הכל') 
-        ? activities 
-        : activities.filter(act => act.type === currentFilter);
+            const filteredActivities = (currentFilter === 'הכל') 
+                ? activities 
+                : activities.filter(act => act.type === currentFilter);
 
-    const grouped = filteredActivities.reduce((acc, act) => {
-        (acc[act.date] = acc[act.date] || []).push(act);
-        return acc;
-    }, {});
+            const grouped = filteredActivities.reduce((acc, act) => {
+                (acc[act.date] = acc[act.date] || []).push(act);
+                return acc;
+            }, {});
 
-    // ✅ ממיינים לפי הפעולה הכי חדשה בכל יום
-    const sortedDates = Object.keys(grouped).sort((a, b) => {
-        const maxA = Math.max(...grouped[a].map(act => act.timestamp));
-        const maxB = Math.max(...grouped[b].map(act => act.timestamp));
-        return maxB - maxA; // יום עם הפעילות הכי חדשה ראשון
-    });
+            // ✅ ממיינים ימים לפי התאריך בפועל
+            const sortedDates = Object.keys(grouped).sort((a, b) => {
+                const dateA = a.split('.').reverse().join('-');
+                const dateB = b.split('.').reverse().join('-');
+                return dateB.localeCompare(dateA);
+            });
 
-    const historyList = document.getElementById('historyList');
-    if (filteredActivities.length === 0) {
-         historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
-         return;
-    }
+            const historyList = document.getElementById('historyList');
+            if (filteredActivities.length === 0) {
+                 historyList.innerHTML = `<div style="text-align: center; color: #999; padding: 20px;">אין פעילויות להצגה עבור "${currentFilter}"</div>`;
+                 return;
+            }
 
-    historyList.innerHTML = sortedDates.map(date => `
-        <div class="day-section">
-            <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
-            ${grouped[date]
-                .sort((a, b) => b.timestamp - a.timestamp) // ✅ פעילויות מהחדש לישן
-                .map(act => `
-                <div class="history-item">
-                    <div style="flex-grow: 1; text-align: right;">
-                        <span>${act.emoji} ${act.type}</span>
-                        ${act.note ? `<span style="color: #666; font-size: 12px; display: block;">(${act.note})</span>` : ''}
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
-                        <span class="time">${act.time}</span>
-                        <span class="user">${act.user}</span>
-                        <button class="edit-btn" onclick="openEditModal('${act.id}')">ערוך</button>
-                        <button class="delete-btn" onclick="deleteActivity('${act.id}')">מחק</button>
-                    </div>
-                </div>`).join('')}
-        </div>`).join('');
-}
+            historyList.innerHTML = sortedDates.map(date => `
+                <div class="day-section">
+                    <div class="day-header">${date === new Date().toLocaleDateString('he-IL') ? 'היום' : date}</div>
+                    ${grouped[date]
+                        .sort((a, b) => timeToMinutes(b.time) - timeToMinutes(a.time)) // ✅ מיון לפי שעה בפועל
+                        .map(act => `
+                        <div class="history-item">
+                            <div style="flex-grow: 1; text-align: right;">
+                                <span>${act.emoji} ${act.type}</span>
+                                ${act.note ? `<span style="color: #666; font-size: 12px; display: block;">(${act.note})</span>` : ''}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                                <span class="time">${act.time}</span>
+                                <span class="user">${act.user}</span>
+                                <button class="edit-btn" onclick="openEditModal('${act.id}')">ערוך</button>
+                                <button class="delete-btn" onclick="deleteActivity('${act.id}')">מחק</button>
+                            </div>
+                        </div>`).join('')}
+                </div>`).join('');
+        }
 
         async function deleteActivity(id) {
             if (confirm('האם למחוק את הפעילות?')) {
@@ -359,19 +379,23 @@
 
         async function saveActivityChanges() {
             if (!currentEditId) return;
+            const newTime = document.getElementById('editTime').value;
             const updates = {
-                time: document.getElementById('editTime').value,
+                time: newTime,
                 note: document.getElementById('editNote').value
             };
+            
             try {
                 await database.ref(`activities/${currentEditId}`).update(updates);
                 closeEditModal();
-            } catch (e) { alert(`שגיאת עדכון: ${e.message}`); }
+                showNotification('הפעילות עודכנה בהצלחה!');
+            } catch (e) { 
+                alert(`שגיאת עדכון: ${e.message}`); 
+            }
         }
         
-        // --- UPDATED Puppy Age Calculation ---
         function calculatePuppyAge() {
-            const birthDate = new Date(2025, 5, 22); // Month is 0-indexed, so 5 is June
+            const birthDate = new Date(2025, 5, 22);
             const today = new Date();
 
             if (today < birthDate) {
@@ -415,12 +439,11 @@
             document.getElementById('puppyAge').textContent = ageText;
         }
 
-
-        // --- Schedule Functions ---
         function loadSchedule() {
             if (!database) return;
             database.ref('schedule').once('value', snapshot => {
-                const data = snapshot.val();
+                const data = snapshot
+                .val();
                 schedule = data ? data : JSON.parse(JSON.stringify(defaultSchedule));
                 displaySchedule();
             });
@@ -476,7 +499,6 @@
             }
         }
         
-        // --- Questions Functions ---
         function listenToQuestions() {
             database.ref('questions').on('value', snapshot => {
                 const data = snapshot.val() || {};
@@ -546,4 +568,3 @@
     </script>
 </body>
 </html>
-```
