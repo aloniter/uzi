@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מעקב עוזי - Live 🐕</title>
+
+    <link rel="apple-touch-icon" href="uzicon.png">
+    <link rel="icon" type="image/png" href="uzicon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="עוזי">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container" id="appContainer">
+        <div class="header">
+            <div class="dog-image-container">
+                <img src="uzi.jpg" alt="עוזי" class="dog-image">
+            </div>
+            <div class="connection-status" id="connectionStatus" title="מחובר"></div>
+            <div class="user-indicator" id="currentUserDisplay">משתמש: </div>
+            <h1>🐕 עוזי</h1>
+            <div class="subtitle">
+                <span id="puppyAge"></span><br>
+                <span style="font-size: 12px;">נולד: 22.6.2025</span>
+            </div>
+        </div>
+        <div class="tabs">
+            <div class="tab active" data-tab="record">רישום</div>
+            <div class="tab" data-tab="history">היסטוריה</div>
+            <div class="tab" data-tab="schedule">לו"ז</div>
+            <div class="tab" data-tab="questions">שאלות לתמיר</div>
+        </div>
+        <div id="record" class="tab-content active">
+             <div class="user-switch">
+                <button class="user-btn active" data-user="אלון">אלון</button>
+                <button class="user-btn" data-user="נעמי">נעמי</button>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn food" data-type="אוכל" data-emoji="🍖"><span class="emoji">🍖</span><span>אוכל</span></button>
+                <button class="action-btn sleep" data-type="שינה" data-emoji="😴"><span class="emoji">😴</span><span>שינה</span></button>
+                <button class="action-btn play" data-type="משחק" data-emoji="🎾"><span class="emoji">🎾</span><span>משחק</span></button>
+                <button class="action-btn training" data-type="אימון" data-emoji="🎯"><span class="emoji">🎯</span><span>אימון</span></button>
+                <button class="action-btn pee" data-type="פיפי" data-emoji="💧"><span class="emoji">💧</span><span>פיפי</span></button>
+                <button class="action-btn poop" data-type="קקי" data-emoji="💩"><span class="emoji">💩</span><span>קקי</span></button>
+                <button class="action-btn walk" data-type="טיול" data-emoji="🚶"><span class="emoji">🚶</span><span>טיול</span></button>
+                <button class="action-btn vet" data-type="וטרינר" data-emoji="🏥"><span class="emoji">🏥</span><span>וטרינר</span></button>
+            </div>
+            <textarea class="note-input" id="noteInput" placeholder="הוסף הערה (אופציונלי)..." rows="3"></textarea>
+        </div>
+        <div id="history" class="tab-content">
+            <div id="historyFilters"></div>
+            <div id="historyList"></div>
+        </div>
+        <div id="schedule" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 18px; font-weight: 600; color: #333;">לוח זמנים יומי</div>
+                <button id="editScheduleBtn" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer;">✏️ ערוך לו"ז</button>
+            </div>
+            <div id="scheduleItems"></div>
+            <div id="scheduleEditSection" style="display: none;">
+                <button id="addScheduleItemBtn">➕ הוסף פעילות חדשה</button>
+                <button id="saveScheduleBtn" style="background: #4CAF50;">💾 שמור לו"ז</button>
+                <button id="resetScheduleBtn" style="background: #ff9800;">🔄 אפס לברירת מחדל</button>
+            </div>
+        </div>
+        <div id="questions" class="tab-content">
+            <div style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">שאלות לתמיר</div>
+            <textarea class="note-input" id="questionInput" placeholder="כתוב כאן שאלה..." rows="4"></textarea>
+            <button id="addQuestionBtn">➕ הוסף שאלה</button>
+            <div id="questionsList" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>עריכת פעילות</h3>
+            <label>שעה:</label>
+            <input type="time" id="editTime">
+            <label>הערה:</label>
+            <textarea id="editNote" rows="3"></textarea>
+            <div class="modal-buttons">
+                <button id="modalCancelBtn">ביטול</button>
+                <button id="modalSaveBtn">שמירה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
