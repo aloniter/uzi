@@ -425,14 +425,14 @@ function createUziConfetti(event) {
         sticker.src = 'uzi_label.png';
         sticker.className = 'uzi-confetti';
         
-        // Random properties
+        // Random properties - SLOWER
         const scale = (Math.random() * 0.5 + 0.6).toFixed(2); // 0.6 to 1.1
         const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
-        const duration = (Math.random() * 0.5 + 0.7).toFixed(2); // 0.7s to 1.2s
+        const duration = (Math.random() * 0.8 + 1.5).toFixed(2); // 1.5s to 2.3s (slower)
         
-        // Random direction and distance
+        // Random direction and distance - less distance
         const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 150 + 100; // 100-250px
+        const distance = Math.random() * 120 + 80; // 80-200px (reduced)
         const deltaX = Math.cos(angle) * distance;
         const deltaY = Math.sin(angle) * distance;
         
@@ -451,9 +451,9 @@ function createUziConfetti(event) {
         
         document.body.appendChild(sticker);
         
-        // Trigger animation on next frame
+        // Trigger animation on next frame - gentler easing
         requestAnimationFrame(() => {
-            sticker.style.transition = `all ${duration}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+            sticker.style.transition = `all ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
             sticker.style.transform = `
                 translate(${deltaX}px, ${deltaY}px) 
                 rotate(${rotation}deg) 
