@@ -60,6 +60,23 @@ function setupEventListeners() {
         }
     });
     document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
+    
+    // Add confetti effect to dog image
+    const dogImageContainer = document.querySelector('.dog-image-container');
+    if (dogImageContainer) {
+        dogImageContainer.addEventListener('click', createUziConfetti);
+        dogImageContainer.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const fakeEvent = {
+                currentTarget: dogImageContainer,
+                clientX: touch.clientX,
+                pageX: touch.pageX,
+                clientY: touch.clientY,
+                pageY: touch.pageY
+            };
+            createUziConfetti(fakeEvent);
+        });
+    }
 }
 
 function loadInitialData() {
@@ -391,4 +408,68 @@ function showNotification(message) {
     el.textContent = message;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
+}
+
+// --- UZI Label Confetti Effect ---
+function createUziConfetti(event) {
+    const count = Math.floor(Math.random() * 9) + 10; // 10-18 stickers
+    const container = event.currentTarget || document.querySelector('.dog-image-container');
+    const rect = container.getBoundingClientRect();
+    
+    // Get tap position relative to the image
+    const tapX = (event.clientX || event.pageX) - rect.left;
+    const tapY = (event.clientY || event.pageY) - rect.top;
+    
+    for (let i = 0; i < count; i++) {
+        const sticker = document.createElement('img');
+        sticker.src = 'uzi_label.png';
+        sticker.className = 'uzi-confetti';
+        
+        // Random properties
+        const scale = (Math.random() * 0.5 + 0.6).toFixed(2); // 0.6 to 1.1
+        const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
+        const duration = (Math.random() * 0.5 + 0.7).toFixed(2); // 0.7s to 1.2s
+        
+        // Random direction and distance
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 150 + 100; // 100-250px
+        const deltaX = Math.cos(angle) * distance;
+        const deltaY = Math.sin(angle) * distance;
+        
+        // Position at tap point
+        sticker.style.cssText = `
+            position: fixed;
+            left: ${rect.left + tapX}px;
+            top: ${rect.top + tapY}px;
+            width: 80px;
+            height: auto;
+            pointer-events: none;
+            z-index: 9999;
+            transform-origin: center center;
+            opacity: 1;
+        `;
+        
+        document.body.appendChild(sticker);
+        
+        // Trigger animation on next frame
+        requestAnimationFrame(() => {
+            sticker.style.transition = `all ${duration}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+            sticker.style.transform = `
+                translate(${deltaX}px, ${deltaY}px) 
+                rotate(${rotation}deg) 
+                scale(${scale}, ${scale})
+            `;
+            sticker.style.opacity = '0';
+        });
+        
+        // Remove after animation
+        setTimeout(() => sticker.remove(), parseFloat(duration) * 1000 + 100);
+    }
+    
+    // Add a little haptic feedback feel with a pulse animation
+    container.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        container.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        container.style.transform = 'scale(1)';
+    }, 50);
 }
