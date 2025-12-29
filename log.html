@@ -24,7 +24,7 @@
         }
         .emoji { font-size: 48px; margin-bottom: 12px; }
         .message { font-size: 16px; color: #333; margin-bottom: 8px; }
-        .json { font-family: monospace; font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; text-align: left; }
+        .json { font-family: monospace; font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; text-align: left; word-break: break-all; }
         .error { color: #d32f2f; }
         .success { color: #388e3c; }
     </style>
@@ -43,10 +43,10 @@
     Create a new Shortcut with "Get Contents of URL" action:
 
     For Pee:
-      URL: https://YOUR_DOMAIN/log.html?type=pee
+      URL: https://aloniter.github.io/uzi/log.html?type=pee
 
     For Poop:
-      URL: https://YOUR_DOMAIN/log.html?type=poop
+      URL: https://aloniter.github.io/uzi/log.html?type=poop
 
     Optional parameters:
       - user: Who logged it (default: "Shortcut")
@@ -62,25 +62,30 @@
     =====================================================
     -->
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
-        // Activity type mapping
+        // Activity type mapping - MUST match script.js activityTypes
         const TYPES = {
             pee:  { type: 'פיפי', emoji: '💧' },
             poop: { type: 'קקי', emoji: '💩' }
         };
 
-        // Firebase config (same as main app)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDj_SEXQ6irE7RL0_9RNkktzWSzPh8eVys",
-            authDomain: "puppy-tracker-82cb0.firebaseapp.com",
-            databaseURL: "https://puppy-tracker-82cb0-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "puppy-tracker-82cb0",
-            storageBucket: "puppy-tracker-82cb0.firebasestorage.app",
-            messagingSenderId: "565635528841",
-            appId: "1:565635528841:web:e2bd7f4f10910d1ae1ae58"
-        };
+        // Firebase REST API endpoint - same path as script.js uses
+        const FIREBASE_URL = 'https://puppy-tracker-82cb0-default-rtdb.europe-west1.firebasedatabase.app/activities.json';
+
+        // Format time as HH:mm to match script.js toLocaleTimeString('he-IL', {hour: '2-digit', minute: '2-digit'})
+        function formatTime(date) {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        // Format date as D.M.YYYY to match script.js toLocaleDateString('he-IL')
+        function formatDate(date) {
+            const day = date.getDate();
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
 
         function showResult(success, emoji, message, data) {
             const el = document.getElementById('result');
@@ -117,44 +122,57 @@
             const activityInfo = TYPES[typeParam];
             const now = new Date();
 
+            // Activity object - EXACT same structure as script.js recordActivity()
             const activity = {
                 type: activityInfo.type,
                 emoji: activityInfo.emoji,
                 user: user,
                 note: note,
-                time: now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
-                date: now.toLocaleDateString('he-IL'),
+                time: formatTime(now),
+                date: formatDate(now),
                 timestamp: Date.now()
             };
 
             try {
-                // Initialize Firebase
-                firebase.initializeApp(firebaseConfig);
-                const database = firebase.database();
+                // Use Firebase REST API with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                // Push activity to Firebase
-                const ref = await database.ref('activities').push(activity);
+                const response = await fetch(FIREBASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(activity),
+                    signal: controller.signal
+                });
 
-                console.log('Activity logged successfully:', ref.key);
+                clearTimeout(timeoutId);
 
-                showResult(true, activityInfo.emoji, 'Logged successfully!', {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('Activity logged:', result.name, activity);
+
+                showResult(true, activityInfo.emoji, 'Logged!', {
                     success: true,
-                    id: ref.key,
-                    type: typeParam,
-                    logged_at: activity.time,
+                    id: result.name,
+                    type: activityInfo.type,
+                    time: activity.time,
                     date: activity.date
                 });
 
             } catch (error) {
                 console.error('Failed to log activity:', error);
-                showResult(false, '❌', 'Failed to log', {
+                const errorMsg = error.name === 'AbortError' ? 'Timeout' : error.message;
+                showResult(false, '❌', 'Failed', {
                     success: false,
-                    error: error.message
+                    error: errorMsg
                 });
             }
         }
 
-        // Run on page load
+        // Run immediately
         logActivity();
     </script>
 </body>
