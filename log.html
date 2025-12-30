@@ -27,6 +27,18 @@
         .json { font-family: monospace; font-size: 12px; color: #666; background: #f0f0f0; padding: 8px; border-radius: 4px; text-align: left; word-break: break-all; }
         .error { color: #d32f2f; }
         .success { color: #388e3c; }
+        .btn {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn:active { background: #1976D2; }
     </style>
 </head>
 <body>
@@ -93,6 +105,7 @@
                 <div class="emoji">${emoji}</div>
                 <div class="message ${success ? 'success' : 'error'}">${message}</div>
                 <pre class="json">${JSON.stringify(data, null, 2)}</pre>
+                <a href="index.html" class="btn">🐕 Open app</a>
             `;
         }
 
