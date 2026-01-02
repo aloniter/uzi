@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uzi iOS Shortcuts</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .shortcut-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .shortcut-card.pee {
+            background: linear-gradient(135deg, #e0f7fa 0%, #80deea 100%);
+        }
+        .shortcut-card.poop {
+            background: linear-gradient(135deg, #ffecb3 0%, #ffb74d 100%);
+        }
+        .emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .shortcut-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #2196F3;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        .info-box {
+            background: #f5f5f5;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2196F3;
+            font-size: 18px;
+        }
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 5px 0;
+            color: #666;
+        }
+        .api-link {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #333;
+            display: block;
+            margin: 5px 0;
+            word-break: break-all;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        .steps {
+            background: #fff9e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .steps h3 {
+            color: #ff9800;
+            margin-top: 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐕 Uzi iOS Shortcuts</h1>
+        <p class="subtitle">One-tap logging from your Lock Screen!</p>
+
+        <div class="shortcut-card pee">
+            <div class="emoji">💧</div>
+            <div class="shortcut-name">Pee Shortcut</div>
+            <a href="Uzi-Pee.shortcut" class="download-btn" download>⬇️ Download</a>
+        </div>
+
+        <div class="shortcut-card poop">
+            <div class="emoji">💩</div>
+            <div class="shortcut-name">Poop Shortcut</div>
+            <a href="Uzi-Poop.shortcut" class="download-btn" download>⬇️ Download</a>
+        </div>
+
+        <div class="steps">
+            <h3>📲 How to Install</h3>
+            <ol>
+                <li><strong>Tap download button</strong> above (on your iPhone)</li>
+                <li><strong>Open the .shortcut file</strong> when it downloads</li>
+                <li><strong>Tap "Add Shortcut"</strong> in the Shortcuts app</li>
+                <li><strong>Done!</strong> Ready to use</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <h3>✨ Features</h3>
+            <ul>
+                <li>✅ Instant logging - no app opening required</li>
+                <li>✅ Works from Lock Screen without unlocking</li>
+                <li>✅ Silent background operation</li>
+                <li>✅ Quick notification when logged</li>
+                <li>✅ Siri voice command support</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>📌 Add to Lock Screen</h3>
+            <ol>
+                <li>Long-press your Lock Screen</li>
+                <li>Tap "Customize" → Widgets</li>
+                <li>Select "Shortcuts"</li>
+                <li>Choose your Uzi shortcuts</li>
+                <li>Done! One-tap logging 🚀</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <h3>🔧 Manual Setup (API Links)</h3>
+            <p>Prefer to create shortcuts yourself? Use these API endpoints:</p>
+            <div class="api-link">https://aloniter.github.io/uzi/api.html?type=pee</div>
+            <div class="api-link">https://aloniter.github.io/uzi/api.html?type=poop</div>
+        </div>
+
+        <div class="footer">
+            <p>📚 Full documentation: <a href="../SHORTCUTS.md">SHORTCUTS.md</a></p>
+            <p>🐕 Made with love for Uzi</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.url",
+      "WFWorkflowActionParameters": {
+        "WFURLActionURL": "https://aloniter.github.io/uzi/api.html?type=pee"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
+      "WFWorkflowActionParameters": {
+        "ShowWFGetContentsOfURLFailureAlert": false,
+        "WFHTTPMethod": "GET"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
+      "WFWorkflowActionParameters": {
+        "WFDictionaryKey": "emoji"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.showresult",
+      "WFWorkflowActionParameters": {
+        "Text": "Logged!"
+      }
+    }
+  ],
+  "WFWorkflowClientVersion": "2605.0.5",
+  "WFWorkflowClientRelease": "2.2.2",
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 2071128575,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowTypes": [
+    "NCWidget",
+    "WatchKit"
+  ],
+  "WFWorkflowInputContentItemClasses": [],
+  "WFWorkflowImportQuestions": [],
+  "WFWorkflowNoInputBehavior": {
+    "Name": "WFWorkflowNoInputBehaviorAskForInput",
+    "Parameters": {
+      "ItemClass": "WFStringContentItem"
+    }
+  },
+  "WFWorkflowHasShortcutInputVariables": false
+}

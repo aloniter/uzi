@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Uzi API</title>
+</head>
+<body>
+<script>
+// Direct API endpoint for iOS Shortcuts - Returns JSON only
+(async function() {
+    const TYPES = {
+        pee:  { type: 'פיפי', emoji: '💧' },
+        poop: { type: 'קקי', emoji: '💩' }
+    };
+
+    const FIREBASE_URL = 'https://puppy-tracker-82cb0-default-rtdb.europe-west1.firebasedatabase.app/activities.json';
+
+    function formatTime(date) {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+
+    function formatDate(date) {
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+
+    function respond(data) {
+        document.body.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        console.log(JSON.stringify(data));
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = params.get('type')?.toLowerCase();
+    const user = params.get('user') || 'Shortcut';
+    const note = params.get('note') || '';
+
+    // Validate type
+    if (!typeParam) {
+        respond({
+            success: false,
+            error: 'type is required',
+            valid_types: ['pee', 'poop']
+        });
+        return;
+    }
+
+    if (!TYPES[typeParam]) {
+        respond({
+            success: false,
+            error: `Invalid type: ${typeParam}`,
+            valid_types: ['pee', 'poop']
+        });
+        return;
+    }
+
+    const activityInfo = TYPES[typeParam];
+    const now = new Date();
+
+    const activity = {
+        type: activityInfo.type,
+        emoji: activityInfo.emoji,
+        user: user,
+        note: note,
+        time: formatTime(now),
+        date: formatDate(now),
+        timestamp: Date.now()
+    };
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(FIREBASE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activity),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        respond({
+            success: true,
+            emoji: activityInfo.emoji,
+            type: activityInfo.type,
+            time: activity.time,
+            date: activity.date,
+            id: result.name
+        });
+
+    } catch (error) {
+        respond({
+            success: false,
+            error: error.message
+        });
+    }
+})();
+</script>
+</body>
+</html>
