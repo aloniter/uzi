@@ -225,9 +225,27 @@ function closeEditModal() {
 
 async function saveActivityChanges() {
     if (!currentEditId) return;
+    const activity = activities.find(act => act.id === currentEditId);
+    if (!activity) return;
+
+    const newTime = document.getElementById('editTime').value;
+    const newNote = document.getElementById('editNote').value;
+
+    // Parse date from he-IL format (D.M.YYYY) and new time (HH:mm)
+    // to recalculate timestamp so chronological sorting stays correct
+    const dateParts = activity.date.split('.');
+    const day = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // 0-indexed
+    const year = parseInt(dateParts[2]);
+    const timeParts = newTime.split(':');
+    const hours = parseInt(timeParts[0]);
+    const minutes = parseInt(timeParts[1]);
+    const newTimestamp = new Date(year, month, day, hours, minutes, 0, 0).getTime();
+
     const updates = {
-        time: document.getElementById('editTime').value,
-        note: document.getElementById('editNote').value
+        time: newTime,
+        note: newNote,
+        timestamp: newTimestamp
     };
     try {
         await database.ref(`activities/${currentEditId}`).update(updates);
